@@ -1,5 +1,6 @@
 library("fImport")
 library("forecast")
+require("magrittr")
 
 # Get data from FRED
 retail <- fredSeries("RSAFSNA", from = "1992-01-01")
@@ -17,8 +18,8 @@ plot(retail.forecast)
 plot(retail.forecast)
 
 ###########################
-  # assigning months for retail sales
-  ###########################
+# assigning months for retail sales
+###########################
 
 vec <- tail(retail.forecast$model$states)[6,] # this is the last rows
 vec.s <- vec[3:length(vec)] # Seasonal Part of the vector
@@ -28,24 +29,44 @@ december <- vec.s[max(vec.s) == vec.s] %>%
   substr(start = 2, stop = 2) %>%
   as.numeric # this gives of the position of december in the vector
 
-monthsss <- c(3:1, 12:2)
+monthsss <- c(3:1, 12:2) # Pooki Method
 
 mon <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-         "Jul", "Aug", "Sept", "Oct", "Nov", "Dec") # vector used for assignement
+         "Jul", "Aug", "Sept", "Oct", "Nov", "Dec") %>% rev # vector used for assignement
 
-(newmonths <- mon[monthsss])
+(newmonths <- mon[monthsss]) # Pooki Final Result
 
-months <- character(length = 12) # intializes and empty vector length 12
+##########################
+# Dynamic Assignment of the variables
+# ----- Not a the mod operator, it does work though
+#######################
 
-for(i in 0:11){
-  if(december + i <= 12)
-  {
-      months[december + i] <- mon[i+1]
-  }
-  else
-  {
-    months[december + i - 12] <- mon[i+1]
-  }
-}
+# This segment of code extracts the dates of the forecast
+# This allows us to figure out what the last real data point
+# We recieved
+###
 
-rownames(retail.forecast)
+forecastDates <- retail.forecast %>% as.data.frame %>% rownames
+
+#  Extracts the first forecated month.
+###
+
+lastMonth <- forecastDates[1] %>% substr(start = 1, stop = 3)
+
+# This gives us the possition of the First month forecasted + 1
+# because the mon vector has been reversed it gives us the last month
+# of real data.
+###
+
+location <- grep(lastMonth, mon) + 1
+
+# Reorganizeing the mon vetor to give us the month of the
+# seasonal indicators
+####
+
+months <- c(mon[location:length(mon)], mon[1:(location - 1)])
+
+# ----------- test print of our results
+##########
+
+cbind(months, vec.s)
